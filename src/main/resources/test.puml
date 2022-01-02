@@ -1,0 +1,78 @@
+@startuml
+class lul {
+- testString: String
+
+}
+class Account<T extends com.patryk.AccountHolder & com.patryk.test & java.lang.Comparable<? super T>,\nE extends java.lang.Object> extends Maybe implements test2 {
+- id: int
+- strings: List<List<String>>
+- collections: List<? extends java.util.Collection>
++ Account(arg0: int, arg1: AccountHolder, arg2: Map)
++ getId(): int
++ randomMathod(arg0: List<? extends com.patryk.Maybe>): void
++ getHolderID(): AccountHolder
++ getMaybeMap(): Map<Integer, Maybe>
++ setMaybeMap(arg0: Map<Integer, Maybe>): void
++ setId(arg0: int): void
++ setHolderID(arg0: AccountHolder): void
+}
+class AccountHolder implements test {
+- holderID: int
++ AccountHolder(arg0: int, arg1: List)
++ getHolderID(): int
++ setHolderID(arg0: int): void
++ getAccountsIDs(): List<Account>
++ setAccountsIDs(arg0: List<Account>): void
+}
+class Be extends Maybe {
+
++ Be()
++ sayHello(): void
+}
+class Main {
+
++ Main()
++ {STATIC} main(arg0: String[]): void
++ {STATIC} justAMethod(arg0: int, arg1: String): void
+}
+class May {
+- isAMonth: Boolean
+- name: String
++ May()
++ May(arg0: Boolean, arg1: String)
++ getName(): String
++ setName(arg0: String): void
++ getAMonth(): Boolean
++ setAMonth(arg0: Boolean): void
+}
+class Maybe {
+- kek: int
+- lel: String
+- strings: List<List<String>>
+- maps: List<Map<List<Integer>, String>>
+- strings2: String[]
++ Maybe(arg0: int, arg1: String, arg2: List)
++ Maybe()
++ getLel(): String
++ setMay(arg0: List<May>): void
++ getMay(): List<May>
++ setLel(arg0: String): void
++ setKek(arg0: int): void
++ getKek(): int
+}
+interface test {
+
+
+}
+interface test2 {
+
+
+}
+Account "*\naccountsIDs" --- "0..1\nholderID" AccountHolder
+Account --> "*\naccountHolders" AccountHolder
+Account --> "*\nmaybeMap" Maybe
+Account --> "*\nlist" Be
+Maybe --> "*\nmay" May
+Maybe --> "*\nmays" May
+
+@enduml
