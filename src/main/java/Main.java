@@ -34,7 +34,6 @@ public class Main {
     /**
     This function returns a string of values by checking the result of a bitwise AND operation between every
      key of modifierValues map and modifiers variable.
-    For example a modifiers value of 9 will return "+ STATIC"
     */
     public static String getModifierValues(int modifiers){
         return modifierValues.entrySet().stream()
@@ -47,34 +46,22 @@ public class Main {
     public static List<Class<?>> loadClassesFromJar(String filePath) throws ClassNotFoundException, IOException {
 
         List<Class<?>> classes = new ArrayList<>();
-
-
         JarFile jarFile = new JarFile(filePath);
         Enumeration<JarEntry> entries = jarFile.entries();
 
         URL[] urls = {new URL("jar:file:" + filePath + "!/")};
-
-        URLClassLoader loader = URLClassLoader.newInstance(urls);
-
-        CustomClassLoader loader2 = new CustomClassLoader(urls);
+        ChildClassLoader loader = new ChildClassLoader(urls);
 
         while (entries.hasMoreElements()) {
             JarEntry jarEntry = entries.nextElement();
 
             if (jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory()) {
-                //.class = 6 characters, so -6 to get rid of file extension from the name
                 String className = jarEntry.getName().substring(0, jarEntry.getName().length() - 6);
-                //changing the directory "/" to a qualified name "."
                 className = className.replace('/', '.');
-                classes.add(loader2.loadClass(className));
+                classes.add(loader.findClass(className));
             }
         }
-
-        loader.close();
-
-
         classesNames = classes.stream().map(Class::getName).collect(Collectors.toList());
-
         return classes;
     }
 
@@ -84,13 +71,11 @@ public class Main {
         for (Type type : types) {
             if (type instanceof ParameterizedType) {
                 typeNames.add((((Class<?>) ((ParameterizedType) type).getRawType()).getSimpleName()) +
-                        (extractNestedParameters(List.of(((ParameterizedType) type).getActualTypeArguments()))));
+                        (extractNestedParameters(typeHelper(type))));
             }else {
                 try {
-                    //try to add a simple name of a type, example List<Integer> instead of java.util.List<java.lang.Integer>
                     typeNames.add((((Class<?>) type).getSimpleName()));
                 }catch (ClassCastException e){
-                    //if you can't add it in a simple form then just save it as it is, example would be List<? extends java.util.Collection>
                     typeNames.add(type.getTypeName());
                 }
             }
@@ -101,7 +86,8 @@ public class Main {
     //this method is used when you need to get actual type parameters from a given type, for example it extracts
     public static List<Type> typeHelper(Type type){
         try {
-            return Stream.of(((ParameterizedType) type).getActualTypeArguments() ).collect(Collectors.toList());
+            return Stream.of(((ParameterizedType) type).getActualTypeArguments() )
+                    .collect(Collectors.toList());
         }catch ( ClassCastException e){
             return new ArrayList<>();
         }
@@ -133,30 +119,33 @@ public class Main {
     }
 
     public static List<String> constructorInfo(Constructor<?>[] constructors, String packageName){
-        //constructors
         return Arrays.stream(constructors)
                 .map(constructor -> getModifierValues(constructor.getModifiers()) +" "+
                         constructor.getName().substring(packageName.length()+1) +"("+
                         Arrays.stream(constructor.getParameters())
-                                .map(parameter -> parameter.getName() +": "+
-                                        parameter.getType().getSimpleName())
+                                .map(parameter -> parameter.getName() + ": " +
+                                        ((parameter.getParameterizedType() instanceof ParameterizedType)
+                                                ?parameter.getType().getSimpleName()
+                                                + extractNestedParameters(typeHelper(parameter.getParameterizedType()))
+                                                :parameter.getType().getSimpleName()) )
                                 .collect(Collectors.joining(", ")) +")")
                 .collect(Collectors.toList());
     }
 
     public static List<String> methodInfo(Method[] declaredMethods){
-        //methods (im so sorry me form the future)
         return Stream.of(declaredMethods)
                 .map(method-> getModifierValues(method.getModifiers()) +" "+
                         method.getName() + "(" +
                         Arrays.stream(method.getParameters())
                                 .map(parameter -> parameter.getName() + ": " +
                                         ((parameter.getParameterizedType() instanceof ParameterizedType)
-                                                ?parameter.getType().getSimpleName() + extractNestedParameters(typeHelper(parameter.getParameterizedType()))
+                                                ?parameter.getType().getSimpleName()
+                                                    + extractNestedParameters(typeHelper(parameter.getParameterizedType()))
                                                 :parameter.getType().getSimpleName()) )
                                 .collect(Collectors.joining(", ")) +"): "+
                         ((method.getGenericReturnType() instanceof ParameterizedType)
-                                ?method.getReturnType().getSimpleName() + extractNestedParameters(typeHelper(method.getGenericReturnType()))
+                                ?method.getReturnType().getSimpleName()
+                                    + extractNestedParameters(typeHelper(method.getGenericReturnType()))
                                 :method.getReturnType().getSimpleName()))
                 .collect(Collectors.toList());
     }
@@ -188,8 +177,6 @@ public class Main {
                 }
 
             }else if(field.getType().isArray()){
-
-                //todo 0..<size of array> for the relationships
                 if(classesNames.contains(field.getType().getComponentType().getName())){
                     classInfo.addConnection(new Connection(aClass.getSimpleName(),
                             "-->",
@@ -201,14 +188,11 @@ public class Main {
                             field.getType().getSimpleName());
                 }
             }else{
-                //if field is not part of a collection, map, and not an array then check if it's type is a program class
                 if(!classesNames.contains(field.getType().getName())){
-                    //if it's not, then save it as a field
                     classInfo.addField(getModifierValues(field.getModifiers()) +" "+
                             field.getName() +": "+
                             field.getType().getSimpleName());
                 }else{
-                    //and if it is, then save it as a relation
                     classInfo.addConnection(new Connection(
                             aClass.getSimpleName(),
                             "-->",
@@ -261,11 +245,11 @@ public class Main {
             //Implements connection
             Class<?>[] interfaces = aClass.getInterfaces();
             if(interfaces.length!=0){
-                classInfo.setExtAndImp(classInfo.getExtAndImp().concat(" implements "+ Stream.of(interfaces).map(Class::getSimpleName)
+                classInfo.setExtAndImp(classInfo.getExtAndImp().concat(" implements "+ Stream.of(interfaces)
+                        .map(Class::getSimpleName)
                         .collect(Collectors.joining(", "))));
             }
 
-            //todo classes inside of classes connection
 
             classInfos.add(classInfo);
         }
@@ -277,9 +261,7 @@ public class Main {
         List<Connection> used = new ArrayList<>();
 
         for (Connection connection: connections) {
-
             if (!used.contains(connection)) {
-
                 Connection oppositeCon = connections.stream()
                         .filter(con ->
                                 con.getClass1().equals(connection.getClass2()) &&
@@ -287,12 +269,9 @@ public class Main {
                                         !used.contains(con)
                         )
                         .findFirst().orElse(null);
-
                 if (oppositeCon != null && !used.contains(oppositeCon)) {
-
                     used.add(connection);
                     used.add(oppositeCon);
-
                     Connection tempCon = new Connection(connection.getClass1(),
                             oppositeCon.getLabel2(),
                             "---",
@@ -302,7 +281,6 @@ public class Main {
                             finCon.isIdentical(tempCon.mirror()))) {
                         finalConnections.add(tempCon);
                     }
-
                 } else {
                     finalConnections.add(connection);
                 }
@@ -316,18 +294,20 @@ public class Main {
         return label.replace("\n","\\n");
     }
 
-    public static void classInfoToUml(List<ClassInfo> classInfos, String savePath) throws IOException {
-        //TODO savePath should be taken from user and test.puml is just a temporary name
+    public static void classInfoToUml(List<ClassInfo> classInfos, String path) throws IOException {
         List<Connection> finalConnections = formatConnections(classInfos.stream()
                 .flatMap(classInfo -> classInfo.getConnections().stream())
                 .collect(Collectors.toList()));
 
-        File pumlFile = new File(savePath + "test.puml");
+        File pumlFile = new File(path.substring(0, path.length()-3) + "puml");
         BufferedWriter writer = new BufferedWriter(new FileWriter(pumlFile));
         writer.write("@startuml\n" +
 
                 classInfos.stream().map(classInfo ->
-                                classInfo.getType() + " " + classInfo.getClassName() + escape(classInfo.getGenerics()) + classInfo.getExtAndImp() + " {\n" +
+                                classInfo.getType() + " " +
+                                        classInfo.getClassName() +
+                                        escape(classInfo.getGenerics()) +
+                                        classInfo.getExtAndImp() + " {\n" +
                                         String.join("\n",classInfo.getFieldList())+"\n"+
                                         String.join("\n",classInfo.getMethodList())+"\n}")
                         .collect(Collectors.joining("\n")) + "\n" +
@@ -345,7 +325,6 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        //String pathToJar="C:\\Users\\Admin\\IdeaProjects\\Loading\\out\\artifacts\\Loading_jar\\Loading.jar";
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String pathToJar;
         boolean exit = false;
@@ -355,10 +334,10 @@ public class Main {
                 pathToJar = reader.readLine();
                 List<Class<?>> classes = loadClassesFromJar(pathToJar);
                 List<ClassInfo> classInfos = extractInfoFromClasses(classes);
-                classInfoToUml(classInfos, pathToJar.substring(0, pathToJar.lastIndexOf("\\")+1));
+                classInfoToUml(classInfos, pathToJar);
             } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-                System.out.println("Error while loading file, make sure that the provided path and file type is correct:\n");
+                System.out.println("Error while loading a file:\n" + e +
+                        "\nMake sure that the provided path and file type is correct.\n");
             }
 
             while(true){
@@ -374,6 +353,5 @@ public class Main {
                 }
             }
         }
-
     }
 }
