@@ -14,6 +14,14 @@ class ConnectionTest {
     }
 
     @Test
-    void isIdentical() {
+    void shouldCorrectlyDetermineIfConnectionIsIdentical() {
+        Connection connection = new Connection("class1", "label1",
+                "-->","label2", "class2");
+        Connection sameConnection = new Connection("class1", "label1",
+                "-->","label2", "class2");
+        Connection differentConnection = new Connection("class2", "-->", "class1");
+        assertTrue(connection.isIdentical(connection));
+        assertTrue(connection.isIdentical(sameConnection));
+        assertFalse(connection.isIdentical(differentConnection));
     }
 }
