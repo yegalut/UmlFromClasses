@@ -108,14 +108,19 @@ public class Main {
     }
 
     public static String classTypeInfo(Class<?> aClass){
-        //todo abstract, enum, maybe record
         if(aClass.isInterface()){
             return "interface";
         }else if(aClass.isEnum()) {
             return "enum";
-        } else{
+        }else if(isAbstract(aClass)) {
+            return "abstract";
+        }else{
             return "class";
         }
+    }
+
+    public static boolean isAbstract(Class<?> aClass) {
+        return (aClass.getModifiers() & 1024)!=0;
     }
 
     public static List<String> constructorInfo(Constructor<?>[] constructors, String packageName){
@@ -154,7 +159,14 @@ public class Main {
         //Fields
         for (Field field : aClass.getDeclaredFields()) {
             //checking if field type can have parameters, for example List<String>
-            if(field.getGenericType() instanceof ParameterizedType) {
+
+            if(classesNames.contains(field.getType().getName())){
+                classInfo.addConnection(new Connection(aClass.getSimpleName(),
+                        "-->",
+                        "0..1\n"+field.getName(),
+                        field.getType().getSimpleName()));
+
+            }else if (field.getGenericType() instanceof ParameterizedType) {
                 //checking if any of the type parameters are a Class of this program
                 List<Connection> connections = classes.stream()
                         .filter(cls -> field.getGenericType().getTypeName().contains(cls.getName() + ">") ||
