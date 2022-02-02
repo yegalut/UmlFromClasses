@@ -11,10 +11,9 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-
     </properties>
-    <dependencies>
 
+    <dependencies>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -23,8 +22,8 @@
             <scope>test</scope>
         </dependency>
 
-
     </dependencies>
 
-
 </project>
+
+

@@ -3,7 +3,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -141,4 +145,34 @@ class MainTest {
         assertArrayEquals(expectedFields.toArray(),actualClassInfo.getFieldList().toArray());
     }
 
+    @Test
+    void shouldConvertClassInfoToUml() throws IOException {
+
+        ClassInfo classInfo = new ClassInfo();
+        classInfo.setType("class");
+        classInfo.setClassName( "klasa");
+        classInfo.setFieldList(Arrays.asList(
+                "- id: int",
+                "- strings: List<List<String>>",
+                "- collections: List<? extends java.util.Collection>"
+        ));
+        classInfo.setMethodList(Arrays.asList(
+                "+ Account(arg0: int, arg1: AccountHolder, arg2: Map)",
+                "+ getId(): int",
+                "+ setId(arg0: int): void",
+                "+ getHolderID(): AccountHolder",
+                "+ setHolderID(arg0: AccountHolder): void",
+                "+ randomMathod(arg0: List<? extends com.patryk.Maybe>): void",
+                "+ getMaybeMap(): Map<Integer, Maybe>",
+                "+ setMaybeMap(arg0: Map<Integer, Maybe>): void"
+        ));
+        String expected = Files.readString(Path.of(".\\src\\test\\resources\\test.puml"), StandardCharsets.UTF_8);
+
+        Main.classInfoToUml(List.of(classInfo),
+                ".\\src\\test\\resources\\actual.jar" );
+
+        String actual = Files.readString(Path.of(".\\src\\test\\resources\\actual.puml"), StandardCharsets.UTF_8);
+
+        assertEquals(expected, actual);
+    }
 }

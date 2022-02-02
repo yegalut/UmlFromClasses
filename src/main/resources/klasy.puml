@@ -1,9 +1,7 @@
 @startuml
 
-class klasa1
-class klasa2
-
-klasa1"0..*" --- "0..1" klasa2
+enum typWyliczeniowy{
+}
 
 @enduml
 

@@ -17,6 +17,8 @@ public class ClassInfo {
     public ClassInfo() {
     }
 
+
+
     public String getModifiers() {
         return modifiers;
     }

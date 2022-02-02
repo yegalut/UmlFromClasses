@@ -155,6 +155,7 @@ public class Main {
                 .collect(Collectors.toList());
     }
 
+
     public static void fieldInfo(Class<?> aClass, ClassInfo classInfo, List<Class<?>> classes){
         //Fields
         for (Field field : aClass.getDeclaredFields()) {
